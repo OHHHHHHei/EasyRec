@@ -23,5 +23,5 @@ jobs:
           xcrun --show-sdk-version
       - name: Check capture dimensions
         run: zsh scripts/test.sh
-      - name: Build application
-        run: zsh scripts/build-app.sh
+      - name: Build universal installer
+        run: zsh scripts/build-dmg.sh

@@ -1,0 +1,29 @@
+EasyRec
+
+macOS 15+ · Apple Silicon and Intel
+
+INSTALL
+Drag EasyRec.app onto the Applications folder, then open EasyRec from Applications.
+Eject the EasyRec disk image after installation.
+
+This release has an ad-hoc signature, not a Developer ID signature, and is not
+notarized by Apple. macOS may block the first launch. If you trust this release,
+follow Apple's instructions for opening an app from an unidentified developer:
+https://support.apple.com/102445
+
+The interface is in Simplified Chinese. Choose a screen or window, enable the
+audio inputs you need, then click the red Record button.
+
+Project and source: https://github.com/OHHHHHHei/EasyRec
+License: MIT; see LICENSE.txt.
+
+安装方法
+将 EasyRec.app 拖入 Applications（应用程序）文件夹，再从应用程序中打开。
+安装完成后可推出 EasyRec 磁盘映像。
+
+本版本使用临时签名，没有 Developer ID 签名或 Apple 公证。首次打开时，
+macOS 可能阻止启动。如果你信任此发布来源，可按照上述 Apple 官方说明，
+在「系统设置 → 隐私与安全性」中确认打开。
+
+支持 macOS 15 及以上的 Apple 芯片和 Intel Mac。
+选择屏幕或窗口，按需打开系统音与麦克风，再点击红色「录制」。

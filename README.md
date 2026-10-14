@@ -21,6 +21,14 @@ EasyRec keeps everyday screen recording close at hand. Choose a screen or window
 
 Recordings stay on your Mac. The app has no account service, analytics, or upload feature.
 
+## Download and install
+
+**[Download EasyRec 0.1.0](https://github.com/OHHHHHHei/EasyRec/releases/download/v0.1.0/EasyRec-0.1.0-universal.dmg)** — macOS 15+, Apple Silicon and Intel.
+
+Open the DMG, drag `EasyRec.app` into **Applications**, then launch it from Applications. You can eject the disk image afterward.
+
+This release is ad-hoc signed and has not been notarized by Apple. macOS may block the first launch. If you trust the release, follow [Apple's instructions for opening the app](https://support.apple.com/102445). Intel is cross-compiled; runtime testing so far has been on Apple Silicon.
+
 ## Build and run
 
 Runtime: **macOS 15 or later**. Building requires **Xcode 26 or its Command Line Tools**, including the macOS 26 SDK or newer. The project uses Swift Package Manager and has no third-party runtime dependencies.
@@ -34,7 +42,7 @@ open build/EasyRec.app
 
 Run the `.app` bundle so macOS can read its microphone permission description. You can also open `Package.swift` in Xcode to work on the source.
 
-The local build is not Developer ID signed or notarized. There is currently no prebuilt release download.
+The local development build is not Developer ID signed or notarized. For universal DMG packaging, see [Releasing](docs/RELEASING.md).
 
 ## Record something
 
@@ -61,6 +69,7 @@ The standalone checks cover capture dimensions and do not need XCTest. Actual vi
 - [Architecture](docs/ARCHITECTURE.md)
 - [Testing](docs/TESTING.md)
 - [Contributing](CONTRIBUTING.md)
+- [Releasing](docs/RELEASING.md)
 - [Changelog](CHANGELOG.md)
 - [Icon assets](Resources/README.md)
 

@@ -11,7 +11,9 @@ The standalone Swift runner checks Retina pixel conversion, the 3840-pixel limit
 
 The application build checks compilation and bundle packaging. Neither command proves that macOS permissions, recorded audio, or file playback work.
 
-GitHub Actions runs these same commands on a macOS runner for pushes and pull requests.
+GitHub Actions runs the dimension checks and universal DMG packaging on a macOS runner for pushes and pull requests.
+
+For installer changes, run `zsh scripts/build-dmg.sh`, mount the resulting DMG, and check the included app and Applications shortcut. Confirm the two executable architectures and the minimum macOS version. Launch a copy of the packaged app on the available hardware; cross-compilation alone does not verify Intel runtime behavior.
 
 ## Interactive recording check
 
@@ -34,5 +36,7 @@ Long recordings, device changes, low disk space, and capture interruptions need 
 ## Current verification scope
 
 The initial implementation has been built and opened on Apple Silicon with macOS 26. Screen recording, system audio, and microphone capture have been confirmed through interactive user testing. The standalone dimension checks also pass.
+
+For the 0.1.0 download, the universal DMG was mounted, both executable architectures and the macOS 15 minimum were inspected, and the packaged application was copied out and launched successfully on Apple Silicon. Its ad-hoc bundle signature was valid. This packaging check did not repeat a full recording or simulate a fresh download's Gatekeeper prompts.
 
 This is not a compatibility or performance certification. Audio synchronization, long sessions, failure recovery, Intel hardware, and macOS 15 still need broader coverage. Interface-only changes are checked by building and opening the affected controls rather than claiming a new recording test.
