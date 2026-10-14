@@ -1,0 +1,27 @@
+name: Build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  macos:
+    runs-on: macos-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+      - name: Show toolchain
+        run: |
+          swift --version
+          xcrun --show-sdk-version
+      - name: Check capture dimensions
+        run: zsh scripts/test.sh
+      - name: Build application
+        run: zsh scripts/build-app.sh

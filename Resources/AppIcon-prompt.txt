@@ -1,0 +1,18 @@
+EasyRec icon artwork
+
+Generation mode: built-in image_gen; transparent_background=true.
+
+Initial generation prompt
+Use case: logo-brand.
+Asset type: final macOS application icon for EasyRec, a small native screen recorder.
+Primary request: a fresh, elegant, original app icon that feels friendly, crisp and premium, dramatically simpler than a bulky camera or dark lens.
+Subject: one bold coral-red rounded rectangular screen outline, with a solid coral recording dot placed cleanly inside it. Create a distinctive, balanced silhouette with generous negative space. No letters.
+Style: contemporary macOS icon craftsmanship, restrained soft depth, very clean geometry. A luminous porcelain-white rounded-square tile with a faint warm edge highlight. The red screen mark is substantial, smooth and slightly raised; the record dot is simple and readable. No dark surfaces.
+Composition: a single straight-on centered square icon, tile occupies about 88% of a square canvas, balanced optical padding, no perspective. Recognizable at 32px. The screen mark fills roughly 60% of the tile.
+Palette: near-white tile, warm coral-red mark, subtle neutral shadows. Minimal palette.
+Background: true transparency outside the rounded-square tile. Keep every edge and shadow fully inside the canvas.
+Text: none.
+Avoid: black lenses, camera hardware, photorealism, metallic chrome, glossy bubbles, gradients inside the symbol, multiple objects, extra small details, icon grids, typography, watermarks, mockup scenes. Deliver exactly one production icon.
+
+Edge refinement prompt
+Edit the attached EasyRec macOS app icon. Preserve the white rounded-square tile, coral-red rounded screen frame, centered coral recording dot, exact centered composition and overall design. Change only edge quality: make the tile silhouette an immaculate smooth continuous rounded square with a crisp, antialiased transparent boundary. Remove every ragged pale fringe, irregular bump, stray colored pixel and floating highlight outside the tile. Keep only a very restrained soft shadow fully within the canvas. The exterior must be truly transparent, never black, white or a checkerboard. Production-ready alpha edges, especially along the top edge and corners. No text, no additional objects.

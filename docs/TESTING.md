@@ -1,0 +1,38 @@
+# Testing
+
+## Automated checks
+
+```sh
+zsh scripts/test.sh
+zsh scripts/build-app.sh
+```
+
+The standalone Swift runner checks Retina pixel conversion, the 3840-pixel limit for a 6K display, proportional even dimensions for portrait content, and invalid inputs. It works with Command Line Tools and does not depend on XCTest.
+
+The application build checks compilation and bundle packaging. Neither command proves that macOS permissions, recorded audio, or file playback work.
+
+GitHub Actions runs these same commands on a macOS runner for pushes and pull requests.
+
+## Interactive recording check
+
+Use a short recording with non-personal content. Confirm the selected source, start, stop, then play the resulting file.
+
+| Scenario | Expected result |
+| --- | --- |
+| Screen capture | The chosen screen is recorded and the toolbar returns after selection |
+| Window capture | The chosen window is recorded |
+| Audio combinations | No audio, system audio, microphone, and both inputs behave as selected |
+| 30 / 60 fps | The chosen setting is applied to the next recording |
+| Cursor disabled | The pointer is omitted from the recording |
+| Custom save folder | The file appears in the chosen folder; the setting survives a restart |
+| Repeated recording | A second recording starts after the first file finishes saving |
+| Hidden toolbar | The menu bar can stop recording and reopen the toolbar |
+| Cancel selection | The app returns to a usable idle state |
+
+Long recordings, device changes, low disk space, and capture interruptions need separate manual checks when changes affect those paths.
+
+## Current verification scope
+
+The initial implementation has been built and opened on Apple Silicon with macOS 26. Screen recording, system audio, and microphone capture have been confirmed through interactive user testing. The standalone dimension checks also pass.
+
+This is not a compatibility or performance certification. Audio synchronization, long sessions, failure recovery, Intel hardware, and macOS 15 still need broader coverage. Interface-only changes are checked by building and opening the affected controls rather than claiming a new recording test.
