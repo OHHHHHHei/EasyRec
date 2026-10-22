@@ -22,8 +22,13 @@ final class RecorderWindowController {
     func show() {
         if window == nil { window = makeWindow() }
         NSApp.unhide(nil)
+        if window?.isMiniaturized == true { window?.deminiaturize(nil) }
         window?.makeKeyAndOrderFront(nil)
         NSApp.activate()
+    }
+
+    func toggle() {
+        if window?.isVisible == true { hide() } else { show() }
     }
 
     func hide() { window?.orderOut(nil) }

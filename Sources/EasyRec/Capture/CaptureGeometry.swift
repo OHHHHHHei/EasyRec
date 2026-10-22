@@ -7,11 +7,11 @@ struct CaptureGeometry: Equatable {
     /// Preserve the selected content's aspect ratio and Retina density, with an
     /// even pixel size for H.264. Cap the longest edge to bound encoder workload.
     static func fit(
-        width: Double, height: Double, scale: Double,
-        maxEdge: Double = 3840
+        width: Double, height: Double, scale: Double
     ) throws -> Self {
-        guard width.isFinite, height.isFinite, scale.isFinite, maxEdge.isFinite,
-            width >= 1, height >= 1, scale > 0, maxEdge >= 2,
+        let maxEdge: Double = 3840
+        guard width.isFinite, height.isFinite, scale.isFinite,
+            width >= 1, height >= 1, scale > 0,
             (width * scale).isFinite, (height * scale).isFinite
         else {
             throw CaptureError.invalidSize

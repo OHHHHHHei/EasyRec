@@ -9,6 +9,8 @@ zsh scripts/build-app.sh
 
 The standalone Swift runner checks Retina pixel conversion, the 3840-pixel limit for a 6K display, proportional even dimensions for portrait content, and invalid inputs. It works with Command Line Tools and does not depend on XCTest.
 
+Preferences checks use an isolated defaults domain to verify first-launch values, persistence, and supported frame-rate/countdown options. For controls, check that Escape or the record button cancels the countdown without creating a recording, and that Command-Shift-R and Command-Shift-E work while another app is active. The settings panel reports hot-key registration conflicts.
+
 The application build checks compilation and bundle packaging. Neither command proves that macOS permissions, recorded audio, or file playback work.
 
 GitHub Actions runs the dimension checks and universal DMG packaging on a macOS runner for pushes and pull requests.

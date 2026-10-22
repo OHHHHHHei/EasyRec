@@ -11,6 +11,9 @@ struct EasyRecApp: App {
             "EasyRec", systemImage: recorder.phase.isBusy ? "record.circle.fill" : "record.circle"
         ) {
             Text(recorder.phase.title)
+            if recorder.phase == .countdown {
+                Button("取消倒计时") { recorder.cancelCountdown() }
+            }
             if recorder.canStop {
                 Text(recorder.formattedDuration)
                 Button("停止录制") { Task { await recorder.stop() } }
