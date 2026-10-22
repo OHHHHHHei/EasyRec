@@ -9,3 +9,6 @@ build/capture-geometry-checks
 swiftc Sources/EasyRec/Capture/RecorderPreferences.swift \
     Tests/PreferencesChecks.swift -o build/preferences-checks
 build/preferences-checks
+swiftc Sources/EasyRec/Capture/CaptureRegion.swift \
+    Tests/RegionChecks.swift -o build/region-checks
+build/region-checks

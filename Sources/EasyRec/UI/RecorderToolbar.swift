@@ -3,6 +3,7 @@ import SwiftUI
 struct RecorderToolbar: View {
     @ObservedObject var recorder: RecorderModel
     @ViewState private var showsSettings = false
+    @ViewState private var showsMicrophone = false
     @ViewState private var showsIssue = false
     private var canConfigure: Bool { recorder.phase == .idle }
 
@@ -13,10 +14,14 @@ struct RecorderToolbar: View {
                     .font(.system(size: 8))
                     .foregroundStyle(.secondary.opacity(0.55))
                     .frame(width: 8).help("拖动工具栏")
-                ToolbarTile("屏幕", icon: "display", selected: recorder.selectedTarget == .display) {
+                ToolbarTile(recorder.selectedTarget == .region ? "区域" : "屏幕", icon: recorder.selectedTarget == .region ? "viewfinder" : "display", selected: recorder.selectedTarget == .display || recorder.selectedTarget == .region) {
                     recorder.chooseContent(.display)
                 }
-                .disabled(!canConfigure).help("选择要录制的显示器")
+                .disabled(!canConfigure).help("点击录制屏幕；右键可框选区域")
+                .contextMenu {
+                    Button("录制整个屏幕") { recorder.chooseContent(.display) }
+                    Button("框选区域…") { recorder.chooseContent(.region) }
+                }
                 ToolbarTile("窗口", icon: "macwindow", selected: recorder.selectedTarget == .window) {
                     recorder.chooseContent(.window)
                 }
@@ -35,6 +40,11 @@ struct RecorderToolbar: View {
                 }
                 .disabled(!canConfigure)
                 .help(recorder.preferences.microphone ? "麦克风已开启，点击关闭" : "麦克风已关闭，点击开启")
+                .contextMenu { Button("麦克风设备与音量…") { showsMicrophone = true } }
+                .popover(isPresented: $showsMicrophone) {
+                    MicrophoneSettings(recorder: recorder).padding(16).frame(width: 300)
+                        .preferredColorScheme(.light).presentationBackground(.white)
+                }
                 toolbarDivider
                 Spacer(minLength: 0)
                 recordButton
@@ -163,6 +173,7 @@ struct RecorderToolbar: View {
     private var statusText: String {
         switch recorder.phase {
         case .choosing: return "选择要共享的屏幕或窗口…"
+        case .choosingRegion: return "拖动框选区域 · Esc 取消"
         case .choosingDestination: return "选择保存文件夹…"
         case .countdown: return "\(recorder.countdownRemaining) 秒后开始 · Esc 取消"
         case .starting: return "正在启动…"
@@ -170,7 +181,7 @@ struct RecorderToolbar: View {
         case .finishing: return "正在保存…"
         case .stopFailed: return "停止失败，请重试"
         case .idle:
-            if recorder.canStart { return recorder.selectedTarget == .display ? "屏幕已就绪" : "窗口已就绪" }
+            if recorder.canStart { return recorder.selectedTarget == .region ? "区域已就绪" : recorder.selectedTarget == .display ? "屏幕已就绪" : "窗口已就绪" }
             return recorder.lastRecording != nil ? "录制已保存" : "选择屏幕或窗口，开始录制"
         }
     }

@@ -19,6 +19,8 @@ final class RecorderModel: NSObject, ObservableObject {
     private var countdownTask: Task<Void, Error>?
 
     @Published private var filter: SCContentFilter?
+    @Published private var region: CGRect?
+    private let regionSelector = RegionSelectionController()
     private var stream: SCStream?
     private var output: SCRecordingOutput?
     private var destination: URL?
@@ -44,7 +46,7 @@ final class RecorderModel: NSObject, ObservableObject {
     var canStart: Bool { phase == .idle && filter != nil }
     var canStop: Bool { phase == .recording || phase == .stopFailed }
     var selectedTarget: CaptureTargetKind? {
-        filter.map { $0.style == .display ? .display : .window }
+        filter.map { region != nil ? .region : $0.style == .display ? .display : .window }
     }
     var formattedDuration: String {
         let seconds = Int(max(0, duration))
@@ -53,11 +55,13 @@ final class RecorderModel: NSObject, ObservableObject {
 
     func chooseContent(_ target: CaptureTargetKind) {
         guard phase == .idle else { return }
+        if target == .region { Task { await chooseRegion() }; return }
         issue = nil
         phase = .choosing
         let picker = SCContentSharingPicker.shared
         var configuration = SCContentSharingPickerConfiguration()
         switch target {
+        case .region: return
         case .display: configuration.allowedPickerModes = [.singleDisplay]
         case .window: configuration.allowedPickerModes = [.singleWindow]
         }
@@ -69,10 +73,37 @@ final class RecorderModel: NSObject, ObservableObject {
         picker.present()
     }
 
+    private func chooseRegion() async {
+        guard phase == .idle else { return }
+        phase = .choosingRegion
+        issue = nil
+        do {
+            let content = try await SCShareableContent.excludingDesktopWindows(false, onScreenWindowsOnly: true)
+            guard phase == .choosingRegion else { return }
+            RecorderWindowController.shared.hide()
+            regionSelector.present { [weak self] displayID, rect in
+                guard let self, let display = content.displays.first(where: { $0.displayID == displayID }) else { return }
+                let ownApp = content.applications.filter { $0.bundleIdentifier == Bundle.main.bundleIdentifier }
+                filter = SCContentFilter(display: display, excludingApplications: ownApp, exceptingWindows: [])
+                region = rect
+                phase = .idle
+                RecorderWindowController.shared.show()
+            } onCancel: { [weak self] in
+                self?.phase = .idle
+                RecorderWindowController.shared.show()
+            }
+        } catch {
+            phase = .idle
+            issue = "无法框选区域：\(error.localizedDescription)。请在系统设置中允许屏幕录制。"
+            RecorderWindowController.shared.show()
+        }
+    }
+
     func cancelContentSelection() {
         guard phase == .choosing else { return }
         SCContentSharingPicker.shared.isActive = false
         filter = nil
+        region = nil
         phase = .idle
         RecorderWindowController.shared.show()
     }
@@ -145,6 +176,7 @@ final class RecorderModel: NSObject, ObservableObject {
 
     func cancelPreparation() {
         if phase == .countdown { cancelCountdown() }
+        else if phase == .choosingRegion { regionSelector.cancel(); phase = .idle }
         else { cancelContentSelection() }
     }
 
@@ -160,6 +192,9 @@ final class RecorderModel: NSObject, ObservableObject {
             if preferences.microphone {
                 let allowed = await AVCaptureDevice.requestAccess(for: .audio)
                 guard allowed else { throw CaptureError.microphoneDenied }
+                guard MicrophoneMonitor.device(id: preferences.microphoneDeviceID) != nil else {
+                    throw CaptureError.microphoneUnavailable
+                }
             }
             if preferences.countdownSeconds > 0 {
                 phase = .countdown
@@ -172,13 +207,15 @@ final class RecorderModel: NSObject, ObservableObject {
                 }
                 countdownTask = task
                 do { try await task.value } catch { return }
+                guard !task.isCancelled else { return }
                 countdownTask = nil
                 phase = .starting
             }
             let size = try CaptureGeometry.fit(
-                width: filter.contentRect.width, height: filter.contentRect.height,
+                width: (region ?? filter.contentRect).width, height: (region ?? filter.contentRect).height,
                 scale: Double(filter.pointPixelScale))
             let configuration = SCStreamConfiguration()
+            if let region { configuration.sourceRect = region }
             configuration.width = size.width
             configuration.height = size.height
             configuration.minimumFrameInterval = CMTime(value: 1, timescale: Int32(preferences.framesPerSecond))
@@ -186,6 +223,7 @@ final class RecorderModel: NSObject, ObservableObject {
             configuration.showsCursor = preferences.showsCursor
             configuration.capturesAudio = preferences.systemAudio
             configuration.captureMicrophone = preferences.microphone
+            configuration.microphoneCaptureDeviceID = preferences.microphoneDeviceID.isEmpty ? nil : preferences.microphoneDeviceID
             configuration.excludesCurrentProcessAudio = true
             configuration.sampleRate = 48_000
             configuration.channelCount = 2
@@ -297,6 +335,7 @@ extension RecorderModel: SCContentSharingPickerObserver {
         Task { @MainActor [weak self] in
             guard let self, phase == .choosing else { return }
             self.filter = filter
+            region = nil
             phase = .idle
             RecorderWindowController.shared.show()
         }
@@ -342,6 +381,7 @@ extension RecorderModel: SCRecordingOutputDelegate {
             clearSession()
             SCContentSharingPicker.shared.isActive = false
             self.filter = nil
+            region = nil
         }
     }
 
