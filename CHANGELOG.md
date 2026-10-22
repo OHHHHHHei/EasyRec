@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.2.1 — 2026-10-23
 
 - Keep region selection visible and accept the first drag after the system screen picker, without requiring a Dock click.
 

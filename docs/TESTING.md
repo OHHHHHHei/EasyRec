@@ -81,3 +81,8 @@ The universal DMG was built from the merged source with version 0.2.0 / build 2.
 ### Region selection focus fix — 2026-10-23
 
 After a user reported needing to click EasyRec in the Dock after choosing a display, the region panel was changed to remain visible while the app is inactive and to accept input without an application-activation click. The local release configuration compiled successfully. The user then tested the fixed local build and confirmed the extra Dock click was no longer needed. This confirms the reported focus handoff, not pixel-accurate crop output across every display.
+
+
+### 0.2.1 installer — 2026-10-23
+
+After the region-focus PR passed CI and was merged, a universal DMG was built with version 0.2.1 / build 3. Its app was copied to Applications and launched successfully on Apple Silicon. The installed bundle contains arm64 and x86_64 executables and has a valid ad-hoc signature. Duplicate local app bundles and older installers were moved to the user's Trash; recordings and settings were retained. The image was ejected after installation.

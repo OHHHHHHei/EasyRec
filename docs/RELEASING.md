@@ -26,8 +26,8 @@ Update the version, build number, changelog, and download links for each release
 Write release notes that include the macOS requirement, supported architectures, installation steps, signing status, and relevant test limits. Publish the tagged version with GitHub CLI:
 
 ```sh
-gh release create v0.2.0 dist/EasyRec-0.2.0-universal.dmg \
-    --verify-tag --title "EasyRec 0.2.0" --notes-file release-notes.md
+gh release create v0.2.1 dist/EasyRec-0.2.1-universal.dmg \
+    --verify-tag --title "EasyRec 0.2.1" --notes-file release-notes.md
 ```
 
 After publication, confirm that the release asset is uploaded and the README download link points to it. Generated apps and installers stay out of Git.

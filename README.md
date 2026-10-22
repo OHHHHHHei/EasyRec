@@ -26,7 +26,7 @@ Recordings stay on your Mac. The app has no account service, analytics, or uploa
 
 ## Download and install
 
-**[Download EasyRec 0.2.0](https://github.com/OHHHHHHei/EasyRec/releases/download/v0.2.0/EasyRec-0.2.0-universal.dmg)** — macOS 15+, Apple Silicon and Intel.
+**[Download EasyRec 0.2.1](https://github.com/OHHHHHHei/EasyRec/releases/download/v0.2.1/EasyRec-0.2.1-universal.dmg)** — macOS 15+, Apple Silicon and Intel.
 
 Open the DMG, drag `EasyRec.app` into **Applications**, then launch it from Applications. You can eject the disk image afterward.
 
