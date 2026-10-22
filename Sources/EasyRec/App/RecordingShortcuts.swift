@@ -11,28 +11,47 @@ final class RecordingShortcuts: ObservableObject {
 
     func register() {
         guard handler == nil else { return }
-        var event = EventTypeSpec(eventClass: OSType(kEventClassKeyboard), eventKind: UInt32(kEventHotKeyPressed))
-        InstallEventHandler(GetApplicationEventTarget(), { _, event, _ in
-            var key = EventHotKeyID()
-            let status = GetEventParameter(event, EventParamName(kEventParamDirectObject),
-                EventParamType(typeEventHotKeyID), nil, MemoryLayout<EventHotKeyID>.size, nil, &key)
-            guard status == noErr else { return status }
-            let id = key.id
-            Task { @MainActor in
-                switch id {
-                case 1: await RecorderModel.shared.toggleRecording()
-                case 2: RecorderWindowController.shared.toggle()
-                default: break
+        var event = EventTypeSpec(
+            eventClass: OSType(kEventClassKeyboard), eventKind: UInt32(kEventHotKeyPressed))
+        let handlerStatus = InstallEventHandler(
+            GetApplicationEventTarget(),
+            { _, event, _ in
+                var key = EventHotKeyID()
+                let status = GetEventParameter(
+                    event, EventParamName(kEventParamDirectObject),
+                    EventParamType(typeEventHotKeyID), nil, MemoryLayout<EventHotKeyID>.size, nil,
+                    &key)
+                guard status == noErr else { return status }
+                let id = key.id
+                Task { @MainActor in
+                    switch id {
+                    case 1: await RecorderModel.shared.toggleRecording()
+                    case 3: await RecorderModel.shared.togglePause()
+                    case 2: RecorderWindowController.shared.toggle()
+                    default: break
+                    }
                 }
-            }
-            return noErr
-        }, 1, &event, nil, &handler)
-        for (id, code, label) in [(UInt32(1), kVK_ANSI_R, "⌘⇧R"), (UInt32(2), kVK_ANSI_E, "⌘⇧E")] {
+                return noErr
+            }, 1, &event, nil, &handler)
+        guard handlerStatus == noErr else {
+            unavailable = ["⌘⇧R", "⌘⇧E", "⌘⇧P"]
+            return
+        }
+        for (id, code, label) in [
+            (UInt32(1), kVK_ANSI_R, "⌘⇧R"), (UInt32(2), kVK_ANSI_E, "⌘⇧E"),
+            (UInt32(3), kVK_ANSI_P, "⌘⇧P"),
+        ] {
             var reference: EventHotKeyRef?
-            let status = RegisterEventHotKey(UInt32(code), UInt32(cmdKey | shiftKey),
-                EventHotKeyID(signature: 0x45524331, id: id), GetApplicationEventTarget(), 0, &reference)
-            if status == noErr, let reference { registrations.append(reference) }
-            else { unavailable.append(label) }
+            let status = RegisterEventHotKey(
+                UInt32(code), UInt32(cmdKey | shiftKey),
+                EventHotKeyID(signature: 0x4552_4331, id: id), GetApplicationEventTarget(),
+                OptionBits(kEventHotKeyExclusive),
+                &reference)
+            if status == noErr, let reference {
+                registrations.append(reference)
+            } else {
+                unavailable.append(label)
+            }
         }
     }
 }

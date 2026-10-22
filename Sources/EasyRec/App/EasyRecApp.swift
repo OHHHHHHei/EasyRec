@@ -18,6 +18,14 @@ struct EasyRecApp: App {
                 Text(recorder.formattedDuration)
                 Button("停止录制") { Task { await recorder.stop() } }
             }
+            if recorder.canPause {
+                Button(recorder.phase == .paused ? "继续录制" : "暂停录制") {
+                    Task { await recorder.togglePause() }
+                }
+            }
+            if recorder.recoveryDirectory != nil {
+                Button("打开保留的录制片段") { recorder.revealRecovery() }
+            }
             Button("显示 EasyRec") { RecorderWindowController.shared.show() }
             if recorder.lastRecording != nil {
                 Button("播放上次录制") { recorder.playRecording() }

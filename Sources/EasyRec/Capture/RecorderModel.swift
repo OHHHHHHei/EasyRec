@@ -23,7 +23,9 @@ final class RecorderModel: NSObject, ObservableObject {
     private let regionSelector = RegionSelectionController()
     private var stream: SCStream?
     private var output: SCRecordingOutput?
-    private var destination: URL?
+    private var segmentURL: URL?
+    private var segments: RecordingSegments?
+    @Published private(set) var recoveryDirectory: URL?
     private var progressTask: Task<Void, Never>?
     private var interruption: String?
     private var failedRecordingIssue: String?
@@ -44,7 +46,8 @@ final class RecorderModel: NSObject, ObservableObject {
     }
 
     var canStart: Bool { phase == .idle && filter != nil }
-    var canStop: Bool { phase == .recording || phase == .stopFailed }
+    var canStop: Bool { phase == .recording || phase == .paused || phase == .stopFailed }
+    var canPause: Bool { phase == .recording || phase == .paused }
     var selectedTarget: CaptureTargetKind? {
         filter.map { region != nil ? .region : $0.style == .display ? .display : .window }
     }
@@ -55,14 +58,18 @@ final class RecorderModel: NSObject, ObservableObject {
 
     func chooseContent(_ target: CaptureTargetKind) {
         guard phase == .idle else { return }
-        if target == .region { Task { await chooseRegion() }; return }
         issue = nil
-        phase = .choosing
+        if target == .region {
+            guard #available(macOS 15.2, *) else {
+                issue = "区域录制需要 macOS 15.2 或更新版本。"
+                return
+            }
+        }
+        phase = target == .region ? .choosingRegion : .choosing
         let picker = SCContentSharingPicker.shared
         var configuration = SCContentSharingPickerConfiguration()
         switch target {
-        case .region: return
-        case .display: configuration.allowedPickerModes = [.singleDisplay]
+        case .display, .region: configuration.allowedPickerModes = [.singleDisplay]
         case .window: configuration.allowedPickerModes = [.singleWindow]
         }
         configuration.allowsChangingSelectedContent = false
@@ -73,34 +80,33 @@ final class RecorderModel: NSObject, ObservableObject {
         picker.present()
     }
 
-    private func chooseRegion() async {
-        guard phase == .idle else { return }
-        phase = .choosingRegion
-        issue = nil
-        do {
-            let content = try await SCShareableContent.excludingDesktopWindows(false, onScreenWindowsOnly: true)
-            guard phase == .choosingRegion else { return }
-            RecorderWindowController.shared.hide()
-            regionSelector.present { [weak self] displayID, rect in
-                guard let self, let display = content.displays.first(where: { $0.displayID == displayID }) else { return }
-                let ownApp = content.applications.filter { $0.bundleIdentifier == Bundle.main.bundleIdentifier }
-                filter = SCContentFilter(display: display, excludingApplications: ownApp, exceptingWindows: [])
-                region = rect
-                phase = .idle
-                RecorderWindowController.shared.show()
-            } onCancel: { [weak self] in
-                self?.phase = .idle
-                RecorderWindowController.shared.show()
-            }
-        } catch {
+    private func selectRegion(in filter: SCContentFilter) {
+        guard #available(macOS 15.2, *), let display = filter.includedDisplays.first,
+            let screen = NSScreen.screens.first(where: {
+                ($0.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? NSNumber)?
+                    .uint32Value == display.displayID
+            })
+        else {
             phase = .idle
-            issue = "无法框选区域：\(error.localizedDescription)。请在系统设置中允许屏幕录制。"
+            issue = "所选显示器已不可用，请重新选择。"
             RecorderWindowController.shared.show()
+            return
+        }
+        RecorderWindowController.shared.hide()
+        regionSelector.present(on: screen) { [weak self] rect in
+            guard let self else { return }
+            self.filter = filter
+            region = rect
+            phase = .idle
+            RecorderWindowController.shared.show()
+        } onCancel: { [weak self] in
+            self?.cancelContentSelection()
         }
     }
 
     func cancelContentSelection() {
-        guard phase == .choosing else { return }
+        guard phase == .choosing || phase == .choosingRegion else { return }
+        regionSelector.dismiss()
         SCContentSharingPicker.shared.isActive = false
         filter = nil
         region = nil
@@ -160,10 +166,15 @@ final class RecorderModel: NSObject, ObservableObject {
     }
 
     func toggleRecording() async {
-        if phase == .countdown { cancelCountdown() }
-        else if canStop { await stop() }
-        else if canStart { await start() }
-        else if phase == .idle { RecorderWindowController.shared.show() }
+        if phase == .countdown {
+            cancelCountdown()
+        } else if canStop {
+            await stop()
+        } else if canStart {
+            await start()
+        } else if phase == .idle {
+            RecorderWindowController.shared.show()
+        }
     }
 
     func cancelCountdown() {
@@ -175,20 +186,24 @@ final class RecorderModel: NSObject, ObservableObject {
     }
 
     func cancelPreparation() {
-        if phase == .countdown { cancelCountdown() }
-        else if phase == .choosingRegion { regionSelector.cancel(); phase = .idle }
-        else { cancelContentSelection() }
+        if phase == .countdown {
+            cancelCountdown()
+        } else if phase == .choosingRegion {
+            regionSelector.cancel()
+            cancelContentSelection()
+        } else {
+            cancelContentSelection()
+        }
     }
 
     func start() async {
-        guard canStart, let filter else { return }
+        guard canStart else { return }
         issue = nil
         phase = .starting
-        var startingStream: SCStream?
         do {
             try FileManager.default.createDirectory(
                 at: outputDirectory, withIntermediateDirectories: true)
-            let url = nextRecordingURL()
+
             if preferences.microphone {
                 let allowed = await AVCaptureDevice.requestAccess(for: .audio)
                 guard allowed else { throw CaptureError.microphoneDenied }
@@ -211,25 +226,50 @@ final class RecorderModel: NSObject, ObservableObject {
                 countdownTask = nil
                 phase = .starting
             }
+            segments = try RecordingSegments(destination: nextRecordingURL())
+            recoveryDirectory = nil
+            interruption = nil
+            duration = 0
+            fileBytes = 0
+            await startSegment()
+        } catch {
+            issue = "启动失败：\(error.localizedDescription)"
+            phase = .idle
+        }
+    }
+
+    private func startSegment() async {
+        guard let filter, let segments else { return }
+        phase = .starting
+        var startingStream: SCStream?
+        do {
+            if preferences.microphone
+                && MicrophoneMonitor.device(id: preferences.microphoneDeviceID) == nil
+            {
+                throw CaptureError.microphoneUnavailable
+            }
             let size = try CaptureGeometry.fit(
-                width: (region ?? filter.contentRect).width, height: (region ?? filter.contentRect).height,
+                width: (region ?? filter.contentRect).width,
+                height: (region ?? filter.contentRect).height,
                 scale: Double(filter.pointPixelScale))
             let configuration = SCStreamConfiguration()
             if let region { configuration.sourceRect = region }
             configuration.width = size.width
             configuration.height = size.height
-            configuration.minimumFrameInterval = CMTime(value: 1, timescale: Int32(preferences.framesPerSecond))
+            configuration.minimumFrameInterval = CMTime(
+                value: 1, timescale: Int32(preferences.framesPerSecond))
             configuration.queueDepth = 5
             configuration.showsCursor = preferences.showsCursor
             configuration.capturesAudio = preferences.systemAudio
             configuration.captureMicrophone = preferences.microphone
-            configuration.microphoneCaptureDeviceID = preferences.microphoneDeviceID.isEmpty ? nil : preferences.microphoneDeviceID
+            configuration.microphoneCaptureDeviceID =
+                preferences.microphoneDeviceID.isEmpty ? nil : preferences.microphoneDeviceID
             configuration.excludesCurrentProcessAudio = true
             configuration.sampleRate = 48_000
             configuration.channelCount = 2
 
             let recordingConfiguration = SCRecordingOutputConfiguration()
-            recordingConfiguration.outputURL = url
+            recordingConfiguration.outputURL = segments.nextURL
             recordingConfiguration.outputFileType = .mp4
             recordingConfiguration.videoCodecType = .h264
             let recordingOutput = SCRecordingOutput(
@@ -241,36 +281,67 @@ final class RecorderModel: NSObject, ObservableObject {
             self.stream = captureStream
             startingStream = captureStream
             self.output = recordingOutput
-            destination = url
-            interruption = nil
-            duration = 0
-            fileBytes = 0
+            segmentURL = segments.nextURL
             try await captureStream.startCapture()
-            // Actual 'recording' state is set only by didStartRecording.
         } catch {
-            // A delegate may have already finished this session while startCapture
-            // was suspended. Do not clear a different, newly started session.
             if let startingStream, stream !== startingStream { return }
             await finishFailedCapture(message: "启动失败：\(error.localizedDescription)")
         }
     }
 
+    func togglePause() async {
+        if phase == .paused {
+            issue = nil
+            await startSegment()
+        } else if phase == .recording {
+            await stopSegment(pausing: true)
+        }
+    }
+
     func stop() async {
-        guard canStop, let stream else { return }
+        guard canStop else { return }
+        if phase == .paused {
+            await finishRecording()
+            return
+        }
         if let failure = failedRecordingIssue {
             await finishFailedCapture(message: failure)
             return
         }
-        phase = .finishing
+        await stopSegment(pausing: false)
+    }
+
+    private func stopSegment(pausing: Bool) async {
+        guard let stream else { return }
+        phase = pausing ? .pausing : .finishing
         do {
             try await stream.stopCapture()
-            // Keep stream/output alive until didFinishRecording has finalized the MP4.
+            // The finish callback closes this segment before pause or final export.
         } catch {
-            // A failed stop can leave the capture running. Keep the Stop action available.
             guard self.stream === stream else { return }
             phase = .stopFailed
             issue = "停止请求失败，请重试：\(error.localizedDescription)"
         }
+    }
+
+    private func finishRecording() async {
+        guard let segments else { return }
+        phase = .finishing
+        do {
+            lastRecording = try await segments.save()
+            issue = interruption.map { "录制已中断，已保存结束前的内容：\($0)" }
+        } catch {
+            recoveryDirectory = segments.directory
+            issue = "合成失败：\(error.localizedDescription)。录制片段保留在：\(segments.directory.path)"
+        }
+        clearSession()
+        SCContentSharingPicker.shared.isActive = false
+        filter = nil
+        region = nil
+    }
+
+    func revealRecovery() {
+        if let recoveryDirectory { NSWorkspace.shared.open(recoveryDirectory) }
     }
 
     func revealRecording() {
@@ -281,14 +352,27 @@ final class RecorderModel: NSObject, ObservableObject {
         if let lastRecording { NSWorkspace.shared.open(lastRecording) }
     }
 
-    private func clearSession() {
+    private func clearCapture() {
         progressTask?.cancel()
         progressTask = nil
         output = nil
         stream = nil
-        destination = nil
+        segmentURL = nil
+    }
+
+    private func clearSession() {
+        clearCapture()
+        segments = nil
         failedRecordingIssue = nil
         phase = .idle
+    }
+
+    private func preserveFailedSession() {
+        if let segments {
+            recoveryDirectory = segments.directory
+            issue = (issue ?? "录制失败") + "\n片段保留在：\(segments.directory.path)"
+        }
+        clearSession()
     }
 
     /// Output failure does not imply that capture has stopped. Keep the stream
@@ -300,7 +384,7 @@ final class RecorderModel: NSObject, ObservableObject {
         phase = .finishing
         issue = message
         guard let failedStream = stream else {
-            clearSession()
+            preserveFailedSession()
             return
         }
         do {
@@ -314,7 +398,7 @@ final class RecorderModel: NSObject, ObservableObject {
             return
         }
         guard stream === failedStream else { return }
-        clearSession()
+        preserveFailedSession()
     }
 }
 
@@ -333,7 +417,11 @@ extension RecorderModel: SCContentSharingPickerObserver {
         didUpdateWith filter: SCContentFilter, for stream: SCStream?
     ) {
         Task { @MainActor [weak self] in
-            guard let self, phase == .choosing else { return }
+            guard let self, phase == .choosing || phase == .choosingRegion else { return }
+            if phase == .choosingRegion {
+                selectRegion(in: filter)
+                return
+            }
             self.filter = filter
             region = nil
             phase = .idle
@@ -343,7 +431,7 @@ extension RecorderModel: SCContentSharingPickerObserver {
 
     nonisolated func contentSharingPickerStartDidFailWithError(_ error: Error) {
         Task { @MainActor [weak self] in
-            guard let self, phase == .choosing else { return }
+            guard let self, phase == .choosing || phase == .choosingRegion else { return }
             phase = .idle
             issue = "无法选择录制内容：\(error.localizedDescription)"
             RecorderWindowController.shared.show()
@@ -360,8 +448,8 @@ extension RecorderModel: SCRecordingOutputDelegate {
                 while !Task.isCancelled {
                     guard let self, let output else { return }
                     let seconds = output.recordedDuration.seconds
-                    if seconds.isFinite { duration = seconds }
-                    fileBytes = output.recordedFileSize
+                    if seconds.isFinite { duration = (segments?.duration ?? 0) + seconds }
+                    fileBytes = (segments?.bytes ?? 0) + output.recordedFileSize
                     do { try await Task.sleep(for: .seconds(1)) } catch { return }
                 }
             }
@@ -371,17 +459,19 @@ extension RecorderModel: SCRecordingOutputDelegate {
     nonisolated func recordingOutputDidFinishRecording(_ recordingOutput: SCRecordingOutput) {
         Task { @MainActor [weak self] in
             guard let self, output === recordingOutput, failedRecordingIssue == nil else { return }
-            lastRecording = destination
-            let seconds = recordingOutput.recordedDuration.seconds
-            if seconds.isFinite { duration = seconds }
-            fileBytes = recordingOutput.recordedFileSize
-            issue = interruption.map { "录制已中断，已保存结束前的内容：\($0)" }
-            // We never detach the output or reconfigure a running stream. Stop
-            // requests (or stream termination) finish the file; do not stop twice.
-            clearSession()
-            SCContentSharingPicker.shared.isActive = false
-            self.filter = nil
-            region = nil
+            guard let segmentURL, let segments else { return }
+            segments.append(
+                segmentURL, duration: recordingOutput.recordedDuration.seconds,
+                bytes: recordingOutput.recordedFileSize)
+            duration = segments.duration
+            fileBytes = segments.bytes
+            let pausing = phase == .pausing
+            clearCapture()
+            if pausing {
+                phase = .paused
+            } else {
+                await finishRecording()
+            }
         }
     }
 
@@ -401,8 +491,8 @@ extension RecorderModel: SCStreamDelegate {
         Task { @MainActor [weak self] in
             guard let self, self.stream === stream else { return }
             if let failure = failedRecordingIssue {
-                clearSession()
                 issue = failure
+                preserveFailedSession()
                 return
             }
             interruption = error.localizedDescription

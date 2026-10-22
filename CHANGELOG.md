@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+- Remember audio switches, input device, cursor, frame rate and countdown settings.
+- Add global start/stop, toolbar visibility and pause/resume shortcuts.
+- Add a cancellable 0/3/5-second recording countdown.
+- Select a screen region after the macOS sharing picker (macOS 15.2+).
+- Select a microphone and test its input level without saving audio.
+- Pause capture and join completed segments into one MP4 on stop; retain segments if saving fails.
+
 ## 0.1.0 — 2026-10-14
 
 - Organize the application into app lifecycle, capture, and interface modules.
