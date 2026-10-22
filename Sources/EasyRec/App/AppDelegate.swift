@@ -3,6 +3,7 @@ import AppKit
 final class AppDelegate: NSObject, NSApplicationDelegate {
     @MainActor
     func applicationDidFinishLaunching(_ notification: Notification) {
+        RecordingShortcuts.shared.register()
         RecorderWindowController.shared.show()
     }
 

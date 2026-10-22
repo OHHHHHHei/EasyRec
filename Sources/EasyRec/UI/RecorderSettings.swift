@@ -2,6 +2,7 @@ import SwiftUI
 
 struct RecorderSettings: View {
     @ObservedObject var recorder: RecorderModel
+    @ObservedObject private var shortcuts = RecordingShortcuts.shared
     let chooseFolder: () -> Void
 
     var body: some View {
@@ -15,13 +16,25 @@ struct RecorderSettings: View {
             HStack {
                 Text("帧率")
                 Spacer()
-                Picker("帧率", selection: $recorder.framesPerSecond) {
+                Picker("帧率", selection: $recorder.preferences.framesPerSecond) {
                     Text("30 fps").tag(30)
                     Text("60 fps").tag(60)
                 }
                 .labelsHidden().pickerStyle(.segmented).frame(width: 152)
             }
-            Toggle("显示鼠标指针", isOn: $recorder.showsCursor).toggleStyle(.switch)
+            Picker("开始倒计时", selection: $recorder.preferences.countdownSeconds) {
+                Text("关闭").tag(0)
+                Text("3 秒").tag(3)
+                Text("5 秒").tag(5)
+            }
+            .pickerStyle(.segmented)
+            Toggle("显示鼠标指针", isOn: $recorder.preferences.showsCursor).toggleStyle(.switch)
+            Text("⌘⇧R 开始／停止　⌘⇧E 显示／隐藏")
+                .font(.system(size: 10)).foregroundStyle(.secondary)
+            if !shortcuts.unavailable.isEmpty {
+                Text("快捷键被占用：" + shortcuts.unavailable.joined(separator: "、"))
+                    .font(.system(size: 10)).foregroundStyle(.orange)
+            }
             Divider()
             VStack(alignment: .leading, spacing: 8) {
                 Label("保存位置", systemImage: "folder").fontWeight(.medium)

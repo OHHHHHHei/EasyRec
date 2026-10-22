@@ -22,19 +22,19 @@ struct RecorderToolbar: View {
                 }
                 .disabled(!canConfigure).help("选择要录制的应用窗口")
                 toolbarDivider
-                ToolbarTile("系统音", icon: "waveform", selected: recorder.systemAudio) {
-                    recorder.systemAudio.toggle()
+                ToolbarTile("系统音", icon: "waveform", selected: recorder.preferences.systemAudio) {
+                    recorder.preferences.systemAudio.toggle()
                 }
                 .disabled(!canConfigure)
-                .help(recorder.systemAudio ? "系统声音已开启，点击关闭" : "系统声音已关闭，点击开启")
+                .help(recorder.preferences.systemAudio ? "系统声音已开启，点击关闭" : "系统声音已关闭，点击开启")
                 ToolbarTile(
-                    "麦克风", icon: recorder.microphone ? "mic.fill" : "mic.slash",
-                    selected: recorder.microphone
+                    "麦克风", icon: recorder.preferences.microphone ? "mic.fill" : "mic.slash",
+                    selected: recorder.preferences.microphone
                 ) {
-                    recorder.microphone.toggle()
+                    recorder.preferences.microphone.toggle()
                 }
                 .disabled(!canConfigure)
-                .help(recorder.microphone ? "麦克风已开启，点击关闭" : "麦克风已关闭，点击开启")
+                .help(recorder.preferences.microphone ? "麦克风已开启，点击关闭" : "麦克风已关闭，点击开启")
                 toolbarDivider
                 Spacer(minLength: 0)
                 recordButton
@@ -78,7 +78,7 @@ struct RecorderToolbar: View {
         .background { RecorderBackground() }
         .clipShape(RecorderAppearance.toolbarShape)
         .preferredColorScheme(.light)
-        .onExitCommand { recorder.cancelContentSelection() }
+        .onExitCommand { recorder.cancelPreparation() }
     }
 
     private var toolbarDivider: some View {
@@ -89,7 +89,7 @@ struct RecorderToolbar: View {
     private var recordButton: some View {
         Button {
             Task {
-                if recorder.canStop { await recorder.stop() } else { await recorder.start() }
+                await recorder.toggleRecording()
             }
         } label: {
             HStack(spacing: 6) {
@@ -99,16 +99,16 @@ struct RecorderToolbar: View {
                     Image(systemName: recorder.canStop ? "stop.fill" : "record.circle.fill")
                         .font(.system(size: 13))
                 }
-                Text(recorder.phase == .stopFailed ? "重试" : recorder.canStop ? "停止" : "录制")
+                Text(recorder.phase == .countdown ? "取消" : recorder.phase == .stopFailed ? "重试" : recorder.canStop ? "停止" : "录制")
                     .font(.system(size: 12, weight: .semibold))
             }
             .frame(width: 76, height: 32).foregroundStyle(.white)
             .background(RecorderAppearance.recordColor, in: RoundedRectangle(cornerRadius: 9))
-            .opacity(recorder.canStart || recorder.canStop ? 1 : 0.4)
+            .opacity(recorder.canStart || recorder.canStop || recorder.phase == .countdown ? 1 : 0.4)
         }
         .buttonStyle(.plain)
-        .disabled(!recorder.canStart && !recorder.canStop)
-        .accessibilityLabel(recorder.canStop ? "停止并保存" : "开始录制")
+        .disabled(!recorder.canStart && !recorder.canStop && recorder.phase != .countdown)
+        .accessibilityLabel(recorder.phase == .countdown ? "取消倒计时" : recorder.canStop ? "停止并保存" : "开始录制")
         .help(recorder.canStart ? "开始录制" : recorder.canStop ? "停止并保存" : "先选择屏幕或窗口")
     }
 
@@ -144,8 +144,8 @@ struct RecorderToolbar: View {
                 Text(statusText).lineLimit(1)
             }
             Spacer(minLength: 4)
-            if recorder.phase == .choosing {
-                Button("取消") { recorder.cancelContentSelection() }.buttonStyle(.plain)
+            if recorder.phase == .choosing || recorder.phase == .countdown {
+                Button("取消") { recorder.cancelPreparation() }.buttonStyle(.plain)
             } else if recorder.canStop {
                 Text(
                     ByteCountFormatter.string(
@@ -164,6 +164,7 @@ struct RecorderToolbar: View {
         switch recorder.phase {
         case .choosing: return "选择要共享的屏幕或窗口…"
         case .choosingDestination: return "选择保存文件夹…"
+        case .countdown: return "\(recorder.countdownRemaining) 秒后开始 · Esc 取消"
         case .starting: return "正在启动…"
         case .recording: return recorder.formattedDuration
         case .finishing: return "正在保存…"

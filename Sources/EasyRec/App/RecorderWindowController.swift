@@ -27,6 +27,10 @@ final class RecorderWindowController {
         NSApp.activate()
     }
 
+    func toggle() {
+        if window?.isVisible == true { hide() } else { show() }
+    }
+
     func hide() { window?.orderOut(nil) }
 
     private func makeWindow() -> NSWindow {

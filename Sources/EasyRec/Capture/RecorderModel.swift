@@ -14,10 +14,9 @@ final class RecorderModel: NSObject, ObservableObject {
     @Published private(set) var lastRecording: URL?
     @Published private(set) var outputDirectory: URL
     @Published var issue: String?
-    @Published var systemAudio = true
-    @Published var microphone = false
-    @Published var showsCursor = true
-    @Published var framesPerSecond = 30
+    @Published var preferences = RecorderPreferences() { didSet { preferences.save() } }
+    @Published private(set) var countdownRemaining = 0
+    private var countdownTask: Task<Void, Error>?
 
     @Published private var filter: SCContentFilter?
     private var stream: SCStream?
@@ -129,6 +128,26 @@ final class RecorderModel: NSObject, ObservableObject {
         return candidate
     }
 
+    func toggleRecording() async {
+        if phase == .countdown { cancelCountdown() }
+        else if canStop { await stop() }
+        else if canStart { await start() }
+        else if phase == .idle { RecorderWindowController.shared.show() }
+    }
+
+    func cancelCountdown() {
+        guard phase == .countdown else { return }
+        countdownTask?.cancel()
+        countdownTask = nil
+        countdownRemaining = 0
+        phase = .idle
+    }
+
+    func cancelPreparation() {
+        if phase == .countdown { cancelCountdown() }
+        else { cancelContentSelection() }
+    }
+
     func start() async {
         guard canStart, let filter else { return }
         issue = nil
@@ -138,9 +157,23 @@ final class RecorderModel: NSObject, ObservableObject {
             try FileManager.default.createDirectory(
                 at: outputDirectory, withIntermediateDirectories: true)
             let url = nextRecordingURL()
-            if microphone {
+            if preferences.microphone {
                 let allowed = await AVCaptureDevice.requestAccess(for: .audio)
                 guard allowed else { throw CaptureError.microphoneDenied }
+            }
+            if preferences.countdownSeconds > 0 {
+                phase = .countdown
+                countdownRemaining = preferences.countdownSeconds
+                let task = Task { @MainActor in
+                    while countdownRemaining > 0 {
+                        try await Task.sleep(for: .seconds(1))
+                        countdownRemaining -= 1
+                    }
+                }
+                countdownTask = task
+                do { try await task.value } catch { return }
+                countdownTask = nil
+                phase = .starting
             }
             let size = try CaptureGeometry.fit(
                 width: filter.contentRect.width, height: filter.contentRect.height,
@@ -148,11 +181,11 @@ final class RecorderModel: NSObject, ObservableObject {
             let configuration = SCStreamConfiguration()
             configuration.width = size.width
             configuration.height = size.height
-            configuration.minimumFrameInterval = CMTime(value: 1, timescale: Int32(framesPerSecond))
+            configuration.minimumFrameInterval = CMTime(value: 1, timescale: Int32(preferences.framesPerSecond))
             configuration.queueDepth = 5
-            configuration.showsCursor = showsCursor
-            configuration.capturesAudio = systemAudio
-            configuration.captureMicrophone = microphone
+            configuration.showsCursor = preferences.showsCursor
+            configuration.capturesAudio = preferences.systemAudio
+            configuration.captureMicrophone = preferences.microphone
             configuration.excludesCurrentProcessAudio = true
             configuration.sampleRate = 48_000
             configuration.channelCount = 2
