@@ -14,7 +14,12 @@ struct RecorderToolbar: View {
                     .font(.system(size: 8))
                     .foregroundStyle(.secondary.opacity(0.55))
                     .frame(width: 8).help("拖动工具栏")
-                ToolbarTile(recorder.selectedTarget == .region ? "区域" : "屏幕", icon: recorder.selectedTarget == .region ? "viewfinder" : "display", selected: recorder.selectedTarget == .display || recorder.selectedTarget == .region) {
+                ToolbarTile(
+                    recorder.selectedTarget == .region ? "区域" : "屏幕",
+                    icon: recorder.selectedTarget == .region ? "viewfinder" : "display",
+                    selected: recorder.selectedTarget == .display
+                        || recorder.selectedTarget == .region
+                ) {
                     recorder.chooseContent(.display)
                 }
                 .disabled(!canConfigure).help("点击录制屏幕；右键可框选区域")
@@ -103,23 +108,34 @@ struct RecorderToolbar: View {
             }
         } label: {
             HStack(spacing: 6) {
-                if recorder.phase == .starting || recorder.phase == .finishing {
+                if recorder.phase == .starting || recorder.phase == .finishing
+                    || recorder.phase == .pausing
+                {
                     ProgressView().controlSize(.mini).scaleEffect(0.8)
                 } else {
                     Image(systemName: recorder.canStop ? "stop.fill" : "record.circle.fill")
                         .font(.system(size: 13))
                 }
-                Text(recorder.phase == .countdown ? "取消" : recorder.phase == .stopFailed ? "重试" : recorder.canStop ? "停止" : "录制")
-                    .font(.system(size: 12, weight: .semibold))
+                Text(
+                    recorder.phase == .countdown
+                        ? "取消"
+                        : recorder.phase == .stopFailed ? "重试" : recorder.canStop ? "停止" : "录制"
+                )
+                .font(.system(size: 12, weight: .semibold))
             }
             .frame(width: 76, height: 32).foregroundStyle(.white)
             .background(RecorderAppearance.recordColor, in: RoundedRectangle(cornerRadius: 9))
-            .opacity(recorder.canStart || recorder.canStop || recorder.phase == .countdown ? 1 : 0.4)
+            .opacity(
+                recorder.canStart || recorder.canStop || recorder.phase == .countdown ? 1 : 0.4)
         }
         .buttonStyle(.plain)
         .disabled(!recorder.canStart && !recorder.canStop && recorder.phase != .countdown)
-        .accessibilityLabel(recorder.phase == .countdown ? "取消倒计时" : recorder.canStop ? "停止并保存" : "开始录制")
-        .help(recorder.canStart ? "开始录制" : recorder.canStop ? "停止并保存" : "先选择屏幕或窗口")
+        .accessibilityLabel(
+            recorder.phase == .countdown ? "取消倒计时" : recorder.canStop ? "停止并保存" : "开始录制"
+        )
+        .help(
+            recorder.phase == .countdown
+                ? "取消倒计时" : recorder.canStart ? "开始录制" : recorder.canStop ? "停止并保存" : "先选择屏幕或窗口")
     }
 
     private var statusLine: some View {
@@ -135,6 +151,9 @@ struct RecorderToolbar: View {
                 .popover(isPresented: $showsIssue, arrowEdge: .bottom) {
                     VStack(alignment: .leading, spacing: 12) {
                         Text(issue).textSelection(.enabled)
+                        if recorder.recoveryDirectory != nil {
+                            Button("打开录制片段") { recorder.revealRecovery() }
+                        }
                         Button("知道了") {
                             showsIssue = false
                             recorder.issue = nil
@@ -154,9 +173,17 @@ struct RecorderToolbar: View {
                 Text(statusText).lineLimit(1)
             }
             Spacer(minLength: 4)
-            if recorder.phase == .choosing || recorder.phase == .countdown {
+            if recorder.phase == .choosing || recorder.phase == .choosingRegion
+                || recorder.phase == .countdown
+            {
                 Button("取消") { recorder.cancelPreparation() }.buttonStyle(.plain)
             } else if recorder.canStop {
+                if recorder.canPause {
+                    Button(recorder.phase == .paused ? "继续" : "暂停") {
+                        Task { await recorder.togglePause() }
+                    }
+                    .buttonStyle(.plain).help("⌘⇧P 暂停／继续")
+                }
                 Text(
                     ByteCountFormatter.string(
                         fromByteCount: Int64(recorder.fileBytes), countStyle: .file)
@@ -178,10 +205,15 @@ struct RecorderToolbar: View {
         case .countdown: return "\(recorder.countdownRemaining) 秒后开始 · Esc 取消"
         case .starting: return "正在启动…"
         case .recording: return recorder.formattedDuration
+        case .pausing: return "正在暂停…"
+        case .paused: return "已暂停 · \(recorder.formattedDuration)"
         case .finishing: return "正在保存…"
         case .stopFailed: return "停止失败，请重试"
         case .idle:
-            if recorder.canStart { return recorder.selectedTarget == .region ? "区域已就绪" : recorder.selectedTarget == .display ? "屏幕已就绪" : "窗口已就绪" }
+            if recorder.canStart {
+                return recorder.selectedTarget == .region
+                    ? "区域已就绪" : recorder.selectedTarget == .display ? "屏幕已就绪" : "窗口已就绪"
+            }
             return recorder.lastRecording != nil ? "录制已保存" : "选择屏幕或窗口，开始录制"
         }
     }

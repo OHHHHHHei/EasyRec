@@ -5,10 +5,12 @@ enum CaptureTargetKind {
 }
 
 enum RecordingPhase {
-    case idle, choosing, choosingDestination, choosingRegion, countdown, starting, recording, finishing, stopFailed
+    case idle, choosing, choosingDestination, choosingRegion, countdown, starting, recording,
+        pausing, paused, finishing, stopFailed
 
     var isBusy: Bool {
-        self == .countdown || self == .starting || self == .recording || self == .finishing || self == .stopFailed
+        self == .countdown || self == .starting || self == .recording || self == .pausing
+            || self == .paused || self == .finishing || self == .stopFailed
     }
     var title: String {
         switch self {
@@ -19,6 +21,8 @@ enum RecordingPhase {
         case .countdown: return "即将开始录制"
         case .starting: return "正在启动"
         case .recording: return "正在录制"
+        case .pausing: return "正在暂停"
+        case .paused: return "已暂停"
         case .finishing: return "正在保存"
         case .stopFailed: return "请重试停止"
         }

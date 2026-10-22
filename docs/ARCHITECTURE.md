@@ -21,13 +21,16 @@ EasyRec is a native macOS application built with SwiftUI, AppKit, and ScreenCapt
 2. The selected `SCContentFilter` is retained and the toolbar returns to the foreground.
 3. Record creates an `SCStreamConfiguration`, an `SCRecordingOutput`, and an `SCStream`.
 4. `SCRecordingOutput` handles H.264 encoding and MP4 writing. Its start callback enables the recording state and progress updates.
-5. Stop requests that capture end. The output's finish callback makes the completed file available for playback.
+5. Pause stops the current stream and waits for the output to finish its segment. Resume starts another stream using the same selection and recording options.
+6. Stop finishes the active segment, or saves directly from the paused state. `RecordingSegments` moves a single segment or concatenates several with AVMutableComposition/AVAssetExportSession export. Multi-segment exports re-encode to avoid compressed-sample overlap at edit boundaries. Source audio offsets are retained, and paused wall-clock time is excluded. Only a successful final save removes the segment directory.
+
+`RecorderPreferences` stores user options in UserDefaults. `RecordingShortcuts` registers fixed Carbon hotkeys without an event monitor. `RegionSelectionController` draws a crop overlay on the display authorized by the system picker; `CaptureRegion` supplies screen-local point coordinates. `MicrophoneMonitor` uses a short-lived AVCaptureSession only while the input test is explicitly enabled.
 
 `CaptureGeometry` converts the selected content's point dimensions and Retina scale to even pixel dimensions. It preserves the aspect ratio and caps the longest edge at 3840 pixels.
 
 ## State and callbacks
 
-The normal session follows `idle → starting → recording → finishing → idle`. Content and folder selection have separate temporary states. A failed stop exposes a retry action and prevents a new recording from starting over an unresolved session.
+The normal session follows `idle → starting → countdown (optional) → starting → recording → finishing → idle`. Pause uses `recording → pausing → paused → starting → recording`. Content and folder selection have separate temporary states. A failed stop exposes a retry action and prevents a new recording from starting over an unresolved session.
 
 The model is main-actor isolated. System delegates enter the main actor and compare the callback's stream or output identity with the current session. This prevents a delayed callback from clearing another session. Capture handles remain alive while the recording output finishes the file.
 

@@ -9,11 +9,16 @@
 
 EasyRec keeps everyday screen recording close at hand. Choose a screen or window, turn on the audio you need, and save a video straight to your folder.
 
+> The new features below are on the development branches; the published 0.1.0 installer does not include them yet.
+
 ## Features
 
 - A compact, movable toolbar with a bright glass surface.
 - Screen and window capture through the macOS sharing picker.
-- Independent system audio and microphone switches.
+- Independent system audio and microphone switches, input-device selection and an opt-in level test.
+- Region capture (macOS 15.2+) using the system sharing picker before cropping.
+- Pause/resume with a single final MP4 that excludes paused time.
+- A cancellable 0/3/5-second countdown and remembered recording options.
 - 30 or 60 fps, with an optional mouse pointer.
 - H.264 / MP4 output, scaled proportionally to a maximum long edge of 3840 pixels.
 - A remembered save folder, automatic filenames, and quick playback or Finder access.
@@ -53,7 +58,11 @@ The local development build is not Developer ID signed or notarized. For univers
 
 The gear opens the save folder, frame rate, and pointer settings. New installations save to `~/Movies/EasyRec`; your chosen folder is remembered. The × hides the toolbar. Reopen it from the menu bar or Dock, and use the menu bar to stop a recording while it is hidden.
 
-Microphone access is requested when you enable microphone recording and start a capture. macOS handles screen-sharing selection and any required permissions. Settings apply to the next recording.
+Right-click **屏幕** or choose region capture in Settings. Confirm a display in the system picker, then drag a rectangle on it; release to confirm or press Escape to cancel.
+
+Global hotkeys: **Command-Shift-R** starts/stops recording or cancels a countdown; **Command-Shift-E** shows/hides the toolbar; **Command-Shift-P** pauses/resumes. These shortcuts are fixed; settings report conflicts.
+
+Microphone settings are also available by right-clicking the microphone tile. The level test starts only after you request it, never saves or plays audio, and stops when its popover closes. Microphone access is requested for recording or an explicit input test. macOS handles screen-sharing selection and any required permissions. Settings apply to the next recording.
 
 The interface is currently in Simplified Chinese. English UI localization is not yet implemented.
 
@@ -64,7 +73,7 @@ zsh scripts/test.sh
 zsh scripts/build-app.sh
 ```
 
-The standalone checks cover capture dimensions and do not need XCTest. Actual video, audio, and permission behavior need an interactive check on macOS.
+The standalone checks cover capture dimensions, region coordinates and preference persistence without XCTest. With FFmpeg installed, run `zsh scripts/test-media.sh` for segment concatenation, two-track audio and failed-save preservation checks. Actual video, audio, and permission behavior need an interactive check on macOS.
 
 - [Architecture](docs/ARCHITECTURE.md)
 - [Testing](docs/TESTING.md)
@@ -73,7 +82,7 @@ The standalone checks cover capture dimensions and do not need XCTest. Actual vi
 - [Changelog](CHANGELOG.md)
 - [Icon assets](Resources/README.md)
 
-EasyRec is in early development. Region selection, pause/resume, camera overlays, editing, and automatic zoom are not available yet.
+EasyRec is in early development. Camera overlays, editing and automatic zoom are not available yet. Pausing stops capture and closes the current segment; resuming creates another. Stop joins them locally. On export failure, source recordings remain in a `.segments` directory beside the destination, with a button to open it.
 
 ## License
 

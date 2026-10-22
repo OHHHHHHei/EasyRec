@@ -31,7 +31,7 @@ struct RecorderSettings: View {
             .pickerStyle(.segmented)
             Toggle("显示鼠标指针", isOn: $recorder.preferences.showsCursor).toggleStyle(.switch)
             MicrophoneSettings(recorder: recorder)
-            Text("⌘⇧R 开始／停止　⌘⇧E 显示／隐藏")
+            Text("⌘⇧R 开始／停止　⌘⇧E 显示／隐藏\n⌘⇧P 暂停／继续")
                 .font(.system(size: 10)).foregroundStyle(.secondary)
             if !shortcuts.unavailable.isEmpty {
                 Text("快捷键被占用：" + shortcuts.unavailable.joined(separator: "、"))

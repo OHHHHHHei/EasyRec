@@ -8,8 +8,11 @@ final class MicrophoneMonitor: ObservableObject {
     private let queue = DispatchQueue(label: "EasyRec.microphone-preview")
 
     func refreshDevices() {
-        devices = AVCaptureDevice.DiscoverySession(deviceTypes: [.microphone, .external],
-            mediaType: .audio, position: .unspecified).devices
+        devices =
+            AVCaptureDevice.DiscoverySession(
+                deviceTypes: [.microphone, .external],
+                mediaType: .audio, position: .unspecified
+            ).devices
     }
 
     static func device(id: String) -> AVCaptureDevice? {
@@ -40,7 +43,10 @@ final class MicrophoneMonitor: ObservableObject {
             session.addInput(input)
             session.addOutput(output)
             await withCheckedContinuation { continuation in
-                queue.async { session.startRunning(); continuation.resume() }
+                queue.async {
+                    session.startRunning()
+                    continuation.resume()
+                }
             }
             defer {
                 queue.async { session.stopRunning() }
@@ -51,7 +57,9 @@ final class MicrophoneMonitor: ObservableObject {
                     message = "麦克风已断开或不可用。"
                     return
                 }
-                let decibels = output.connection(with: .audio)?.audioChannels.map(\.averagePowerLevel).max() ?? -60
+                let decibels =
+                    output.connection(with: .audio)?.audioChannels.map(\.averagePowerLevel).max()
+                    ?? -60
                 level = min(1, max(0, (Double(decibels) + 60) / 60))
                 try await Task.sleep(for: .milliseconds(100))
             }

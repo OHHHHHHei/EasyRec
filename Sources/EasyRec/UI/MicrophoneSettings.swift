@@ -13,8 +13,11 @@ struct MicrophoneSettings: View {
                 ForEach(monitor.devices, id: \.uniqueID) { device in
                     Text(device.localizedName).tag(device.uniqueID)
                 }
-                if !recorder.preferences.microphoneDeviceID.isEmpty &&
-                    !monitor.devices.contains(where: { $0.uniqueID == recorder.preferences.microphoneDeviceID }) {
+                if !recorder.preferences.microphoneDeviceID.isEmpty
+                    && !monitor.devices.contains(where: {
+                        $0.uniqueID == recorder.preferences.microphoneDeviceID
+                    })
+                {
                     Text("已选设备未连接").tag(recorder.preferences.microphoneDeviceID)
                 }
             }
@@ -35,8 +38,12 @@ struct MicrophoneSettings: View {
         }
         .onChange(of: recorder.preferences.microphoneDeviceID) { testing = false }
         .onChange(of: recorder.phase) { if recorder.phase != .idle { testing = false } }
-        .onReceive(NotificationCenter.default.publisher(for: AVCaptureDevice.wasConnectedNotification)) { _ in monitor.refreshDevices() }
-        .onReceive(NotificationCenter.default.publisher(for: AVCaptureDevice.wasDisconnectedNotification)) { _ in monitor.refreshDevices() }
+        .onReceive(
+            NotificationCenter.default.publisher(for: AVCaptureDevice.wasConnectedNotification)
+        ) { _ in monitor.refreshDevices() }
+        .onReceive(
+            NotificationCenter.default.publisher(for: AVCaptureDevice.wasDisconnectedNotification)
+        ) { _ in monitor.refreshDevices() }
         .disabled(recorder.phase != .idle)
     }
 }
