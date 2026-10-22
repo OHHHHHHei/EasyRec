@@ -12,6 +12,7 @@ struct RecorderSettings: View {
                 Spacer()
                 Text("MP4").font(.system(size: 10)).foregroundStyle(.secondary)
             }
+            Button("框选录制区域…") { recorder.chooseContent(.region) }
             Divider()
             HStack {
                 Text("帧率")
@@ -29,6 +30,7 @@ struct RecorderSettings: View {
             }
             .pickerStyle(.segmented)
             Toggle("显示鼠标指针", isOn: $recorder.preferences.showsCursor).toggleStyle(.switch)
+            MicrophoneSettings(recorder: recorder)
             Text("⌘⇧R 开始／停止　⌘⇧E 显示／隐藏")
                 .font(.system(size: 10)).foregroundStyle(.secondary)
             if !shortcuts.unavailable.isEmpty {

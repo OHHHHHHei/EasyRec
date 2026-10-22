@@ -11,6 +11,8 @@ The standalone Swift runner checks Retina pixel conversion, the 3840-pixel limit
 
 Preferences checks use an isolated defaults domain to verify first-launch values, persistence, and supported frame-rate/countdown options. For controls, check that Escape or the record button cancels the countdown without creating a recording, and that Command-Shift-R and Command-Shift-E work while another app is active. The settings panel reports hot-key registration conflicts.
 
+Region checks cover reverse drags and clipping to screen-local bounds. Manually check region selection on Retina and secondary displays, including Escape cancellation. Region capture requires macOS screen-recording permission. In microphone settings, test the default and an external input, close the popover to stop metering, then disconnect the selected device: the app should ask for a new device rather than silently recording another input.
+
 The application build checks compilation and bundle packaging. Neither command proves that macOS permissions, recorded audio, or file playback work.
 
 GitHub Actions runs the dimension checks and universal DMG packaging on a macOS runner for pushes and pull requests.

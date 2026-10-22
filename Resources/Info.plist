@@ -14,6 +14,6 @@
     <key>LSMinimumSystemVersion</key><string>15.0</string>
     <key>NSPrincipalClass</key><string>NSApplication</string>
     <key>NSHighResolutionCapable</key><true/>
-    <key>NSMicrophoneUsageDescription</key><string>将你的旁白录入视频，仅在你开启麦克风并开始录制时访问。</string>
+    <key>NSMicrophoneUsageDescription</key><string>将你的旁白录入视频，仅在开启麦克风录制或主动测试麦克风时访问。</string>
 </dict>
 </plist>

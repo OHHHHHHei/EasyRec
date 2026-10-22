@@ -14,6 +14,7 @@ struct PreferencesChecks {
         settings.showsCursor = false
         settings.framesPerSecond = 60
         settings.countdownSeconds = 0
+        settings.microphoneDeviceID = "test-external-microphone"
         settings.save(to: defaults)
         precondition(RecorderPreferences(defaults: defaults) == settings)
         defaults.set(120, forKey: "framesPerSecond")
