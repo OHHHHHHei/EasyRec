@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Keep region selection visible and accept the first drag after the system screen picker, without requiring a Dock click.
+
 ## 0.2.0 — 2026-10-23
 
 - Remember audio switches, input device, cursor, frame rate and countdown settings.

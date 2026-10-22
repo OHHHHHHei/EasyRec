@@ -76,3 +76,8 @@ All standalone and synthetic media checks passed again. Live recordings and anal
 ### 0.2.0 installer — 2026-10-23
 
 The universal DMG was built from the merged source with version 0.2.0 / build 2. Its mounted contents included EasyRec.app, the Applications shortcut, installation instructions and the license. A copy extracted from the DMG retained a valid ad-hoc signature and contained arm64 and x86_64 executables, both with a macOS 15.0 minimum. That copy launched on Apple Silicon and displayed the new region, countdown, microphone and shortcut settings while retaining the existing save directory. The disk image was then ejected. This packaging check did not repeat a recording or simulate a freshly downloaded app's Gatekeeper prompts.
+
+
+### Region selection focus fix — 2026-10-23
+
+After a user reported needing to click EasyRec in the Dock after choosing a display, the region panel was changed to remain visible while the app is inactive and to accept input without an application-activation click. The local release configuration compiled successfully. The user then tested the fixed local build and confirmed the extra Dock click was no longer needed. This confirms the reported focus handoff, not pixel-accurate crop output across every display.

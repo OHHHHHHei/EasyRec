@@ -13,12 +13,15 @@ final class RegionSelectionController {
         completion = onSelect
         cancellation = onCancel
         let window = RegionPanel(
-            contentRect: screen.frame, styleMask: .borderless,
+            contentRect: screen.frame, styleMask: [.borderless, .nonactivatingPanel],
             backing: .buffered, defer: false)
         window.title = "框选录制区域"
         window.isOpaque = false
         window.backgroundColor = .clear
         window.level = .screenSaver
+        // The system picker can return focus to the previously active app.
+        // Keep the overlay visible and interactive through that handoff.
+        window.hidesOnDeactivate = false
         window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
         window.isReleasedWhenClosed = false
         let view = RegionSelectionView(frame: NSRect(origin: .zero, size: screen.frame.size))
@@ -31,9 +34,10 @@ final class RegionSelectionController {
         view.onCancel = { [weak self] in self?.cancel() }
         window.contentView = view
         self.window = window
+        NSApp.unhide(nil)
+        NSApp.activate()
         window.makeKeyAndOrderFront(nil)
         window.makeFirstResponder(view)
-        NSApp.activate()
     }
 
     func cancel() {
@@ -63,6 +67,7 @@ private final class RegionSelectionView: NSView {
     private var selection = CGRect.zero
     override var isFlipped: Bool { true }
     override var acceptsFirstResponder: Bool { true }
+    override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
 
     override func resetCursorRects() { addCursorRect(bounds, cursor: .crosshair) }
     override func mouseDown(with event: NSEvent) {
