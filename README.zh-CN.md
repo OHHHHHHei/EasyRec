@@ -9,8 +9,6 @@
 
 EasyRec 是一个轻巧的 macOS 录屏工具。选好屏幕或窗口，打开需要的声音，视频就会保存到你指定的文件夹。
 
-> 以下新增功能位于开发分支，现有 0.1.0 安装包尚不包含这些改动。
-
 ## 能做什么
 
 - 明亮的玻璃工具栏，小巧、可拖动。
@@ -29,7 +27,7 @@ EasyRec 是一个轻巧的 macOS 录屏工具。选好屏幕或窗口，打开�
 
 ## 下载安装
 
-**[下载 EasyRec 0.1.0 安装包](https://github.com/OHHHHHHei/EasyRec/releases/download/v0.1.0/EasyRec-0.1.0-universal.dmg)**，适用于 macOS 15 及以上的 Apple 芯片和 Intel Mac。
+**[下载 EasyRec 0.2.0 安装包](https://github.com/OHHHHHHei/EasyRec/releases/download/v0.2.0/EasyRec-0.2.0-universal.dmg)**，适用于 macOS 15 及以上的 Apple 芯片和 Intel Mac。
 
 打开 DMG，将 `EasyRec.app` 拖入 **Applications（应用程序）**，再从应用程序中启动。安装后可推出磁盘映像。
 

@@ -9,8 +9,6 @@
 
 EasyRec keeps everyday screen recording close at hand. Choose a screen or window, turn on the audio you need, and save a video straight to your folder.
 
-> The new features below are on the development branches; the published 0.1.0 installer does not include them yet.
-
 ## Features
 
 - A compact, movable toolbar with a bright glass surface.
@@ -28,7 +26,7 @@ Recordings stay on your Mac. The app has no account service, analytics, or uploa
 
 ## Download and install
 
-**[Download EasyRec 0.1.0](https://github.com/OHHHHHHei/EasyRec/releases/download/v0.1.0/EasyRec-0.1.0-universal.dmg)** — macOS 15+, Apple Silicon and Intel.
+**[Download EasyRec 0.2.0](https://github.com/OHHHHHHei/EasyRec/releases/download/v0.2.0/EasyRec-0.2.0-universal.dmg)** — macOS 15+, Apple Silicon and Intel.
 
 Open the DMG, drag `EasyRec.app` into **Applications**, then launch it from Applications. You can eject the disk image afterward.
 

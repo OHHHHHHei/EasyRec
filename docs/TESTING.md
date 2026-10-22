@@ -71,3 +71,8 @@ Copies of the second and third source segments were retained locally before savi
 The built-in Retina display's region overlay opened through the sharing picker, and Escape returned to a usable toolbar. Two automated drag attempts, including a fresh app binding, failed in the automation tool with `noWindowsAvailable`. No region recording was started. Automated Command-Shift-R from the player did not trigger EasyRec; the tool's injected keys cannot stand in for physical global-hotkey validation. These remain unverified rather than passed.
 
 All standalone and synthetic media checks passed again. Live recordings and analysis files remain local and are not included in the public repository. No recording or microphone preview is left running; microphone recording was restored to its original disabled setting.
+
+
+### 0.2.0 installer — 2026-10-23
+
+The universal DMG was built from the merged source with version 0.2.0 / build 2. Its mounted contents included EasyRec.app, the Applications shortcut, installation instructions and the license. A copy extracted from the DMG retained a valid ad-hoc signature and contained arm64 and x86_64 executables, both with a macOS 15.0 minimum. That copy launched on Apple Silicon and displayed the new region, countdown, microphone and shortcut settings while retaining the existing save directory. The disk image was then ejected. This packaging check did not repeat a recording or simulate a freshly downloaded app's Gatekeeper prompts.

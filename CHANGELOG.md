@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.2.0 — 2026-10-23
 
 - Remember audio switches, input device, cursor, frame rate and countdown settings.
 - Add global start/stop, toolbar visibility and pause/resume shortcuts.
